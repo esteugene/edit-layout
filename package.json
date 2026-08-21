@@ -1,0 +1,12 @@
+{
+  "name": "edit-layout",
+  "version": "0.1.0",
+  "description": "A composition editor that runs on top of a real React page. Select, move, resize, restyle and rewrite what the page rendered, then export it as JSON or a static design reference.",
+  "license": "MIT",
+  "author": "Eugene Chorny",
+  "keywords": ["react", "design", "layout", "editor", "design-review", "devtool"],
+  "files": ["src", "README.md", "LICENSE"],
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}

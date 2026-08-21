@@ -1,0 +1,40 @@
+/* Deliberately plain CSS: an example that needed a design system to render
+   would be an example of the design system. */
+.pg { background: #f6f6f6; color: #111; min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+.pg-inner { max-width: 1100px; margin: 0 auto; padding: 64px 24px; }
+
+.pg-kicker { margin: 0; font-size: 12px; letter-spacing: .08em;
+             text-transform: uppercase; color: #737373; }
+.pg-hero h1 { margin: 12px 0 0; font-size: 44px; line-height: 1.1; font-weight: 400; }
+.pg-hero p { margin: 16px 0 0; max-width: 560px; font-size: 18px;
+             line-height: 1.5; color: #525252; }
+
+.pg-cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.pg-cta-primary, .pg-cta-ghost {
+  display: inline-flex; align-items: center; height: 48px; padding: 0 28px;
+  border-radius: 999px; font-size: 16px;
+}
+.pg-cta-primary { background: #18181b; color: #fff; }
+.pg-cta-ghost { border: 1px solid #d4d4d4; color: #111; }
+
+.pg-cards { display: grid; gap: 16px; margin-top: 64px; }
+@media (min-width: 768px) { .pg-cards { grid-template-columns: repeat(3, 1fr); } }
+.pg-card { background: #fff; border-radius: 16px; padding: 24px; }
+.pg-card h2 { margin: 0; font-size: 18px; font-weight: 500; }
+.pg-card p { margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: #525252; }
+
+.pg-figures { display: flex; flex-wrap: wrap; gap: 48px; margin-top: 64px; }
+.pg-figure-value { font-size: 34px; line-height: 1.1; }
+.pg-figure-label { margin-top: 4px; font-size: 12px; color: #737373; }
+
+.pg-list { background: #fff; border-radius: 16px; padding: 24px; margin-top: 64px; }
+.pg-rule { height: 1px; background: #e5e5e5; }
+.pg-list-row { display: flex; align-items: center; gap: 12px; padding: 16px 0; }
+.pg-dot { width: 8px; height: 8px; border-radius: 999px; background: #71717a; }
+
+.pg-wide { background: #ededed; border-radius: 16px; padding: 40px;
+           margin-top: 64px; text-align: center; }
+.pg-wide h2 { margin: 0; font-size: 26px; font-weight: 400; }
+.pg-wide p { margin: 12px auto 0; max-width: 520px; font-size: 14px;
+             line-height: 1.5; color: #525252; }

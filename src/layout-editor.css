@@ -1,0 +1,412 @@
+/* The editor chrome deliberately uses its own neutral palette so it reads as
+   tooling laid over the page rather than as part of the host interface. */
+
+/* ── EDIT LAYOUT ──────────────────────────────────────────────────────────
+   Two halves: the rule that previews an edit on a real page element, and the
+   editor's own chrome. Both are scoped so a page with the editor closed is
+   byte-for-byte the page without it. */
+
+/* The preview. `!important` is load-bearing: framer-motion writes `transform`
+   as an inline style, and an inline declaration outranks a normal rule from a
+   stylesheet. It only applies to elements the editor has actually touched, so
+   everything else keeps animating as it always did.
+
+   Baseline and delta stay separate on purpose — `--baked-*` is whatever the
+   element's own CSS already did, `--edit-*` is the user's adjustment on top.
+   Collapsing them would lose the original rotation, and STRAIGHTEN would have
+   nothing to cancel. */
+[data-le-edited] {
+  transform: translate(
+      calc(var(--baked-x, 0px) + var(--edit-x, 0px)),
+      calc(var(--baked-y, 0px) + var(--edit-y, 0px))
+    )
+    rotate(calc(var(--baked-rot, 0deg) + var(--edit-rot, 0deg))) !important;
+}
+[data-le-edited][style*="--edit-w"] {
+  width: var(--edit-w) !important;
+}
+[data-le-edited][style*="--edit-h"] {
+  height: var(--edit-h) !important;
+}
+[data-le-edited][style*="--edit-z"] {
+  position: relative;
+  z-index: var(--edit-z) !important;
+}
+[data-le-edited][style*="--edit-color"] {
+  color: var(--edit-color) !important;
+}
+[data-le-edited][style*="--edit-bg"] {
+  background-color: var(--edit-bg) !important;
+}
+[data-le-edited][style*="--edit-border"] {
+  border-color: var(--edit-border) !important;
+}
+
+/* Text being rewritten in place. Deliberately quiet — a dashed underline and a
+   caret, not a box, so the type keeps looking like the page's type while you
+   judge the wording. */
+[data-le-text] {
+  outline: none !important;
+  box-shadow: 0 1px 0 0 rgba(43, 105, 197, 0.7) !important;
+}
+
+/* ── Docking ───────────────────────────────────────────────────────────── */
+
+/* Docked, the panel takes width from the document instead of covering it, so
+   the page reflows into the space that is actually left. Undocking restores
+   the full width without the page ever knowing the editor existed. */
+html[data-le-docked] body {
+  margin-right: var(--le-dock-w, 340px);
+}
+html[data-le-docked] .le-capture {
+  right: var(--le-dock-w, 340px);
+}
+
+/* ── Editor chrome ─────────────────────────────────────────────────────── */
+
+.le-root {
+  --le-accent: #2b69c5;
+  --le-dock-w: 340px;
+  --le-panel-bg: #14171c;
+  --le-line: #2c313a;
+  --le-dim: #9aa3b2;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+.le-capture {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+
+/* One box for the whole selection: the outline, the badge and all eight
+   handles live inside it, so a drag moves one element per frame instead of
+   re-rendering nine. */
+.le-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+.le-select {
+  position: absolute;
+  inset: 0;
+  outline: 2px solid var(--le-accent);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+.le-frame[data-concept="true"] .le-select {
+  outline-style: dashed;
+}
+
+.le-badge {
+  position: absolute;
+  top: -26px;
+  left: -2px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--le-accent);
+  color: #fff;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.le-badge b {
+  font-weight: 600;
+}
+.le-badge span {
+  opacity: 0.75;
+}
+
+/* Big enough to grab without aiming. */
+.le-handle {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid var(--le-accent);
+  border-radius: 4px;
+  background: #fff;
+  pointer-events: auto;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.le-handle:hover {
+  background: var(--le-accent);
+}
+
+.le-root[data-show-hits="true"] .le-capture {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(43, 105, 197, 0.04) 0 8px,
+    transparent 8px 16px
+  );
+}
+
+/* ── Panel ─────────────────────────────────────────────────────────────── */
+
+.le-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--le-dock-w, 340px);
+  overflow-y: auto;
+  pointer-events: auto;
+  background: var(--le-panel-bg, #14171c);
+  color: #e7e9ee;
+  border-left: 1px solid var(--le-line, #2c313a);
+  font-size: 12px;
+}
+
+/* Floating: same panel, lifted off and draggable by its header. */
+.le-panel[data-float="true"] {
+  top: auto;
+  right: auto;
+  bottom: auto;
+  width: 320px;
+  max-height: calc(100vh - 48px);
+  border: 1px solid var(--le-line, #2c313a);
+  border-radius: 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}
+
+.le-panel h2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--le-line, #2c313a);
+}
+.le-panel h2[data-grab="true"] {
+  cursor: grab;
+}
+.le-dockbtn {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.le-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--le-line, #2c313a);
+}
+.le-section > label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--le-dim, #9aa3b2);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.le-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.le-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.le-panel button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--le-line, #2c313a);
+  border-radius: 6px;
+  background: #1c2029;
+  color: #e7e9ee;
+  font-size: 12px;
+  cursor: pointer;
+}
+.le-panel button:hover {
+  background: #262c37;
+}
+.le-panel button[data-active="true"] {
+  background: var(--le-accent, #2b69c5);
+  border-color: var(--le-accent, #2b69c5);
+  color: #fff;
+}
+.le-panel button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.le-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.le-field span {
+  width: 18px;
+  color: var(--le-dim, #9aa3b2);
+}
+.le-swatchlabel {
+  width: 46px;
+  color: var(--le-dim, #9aa3b2);
+}
+.le-panel input[type="number"],
+.le-panel input[type="text"],
+.le-panel textarea {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid var(--le-line, #2c313a);
+  border-radius: 6px;
+  background: #0f1216;
+  color: #e7e9ee;
+  font-size: 12px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.le-panel textarea {
+  resize: vertical;
+  line-height: 1.45;
+}
+.le-panel input[type="color"] {
+  width: 42px;
+  height: 34px;
+  padding: 2px;
+  border: 1px solid var(--le-line, #2c313a);
+  border-radius: 6px;
+  background: #0f1216;
+  cursor: pointer;
+}
+
+.le-meta {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--le-dim, #9aa3b2);
+  word-break: break-all;
+}
+.le-meta b {
+  color: #e7e9ee;
+  font-weight: 600;
+}
+
+/* One quiet line instead of a stack of alarms. The editor states what mode it
+   is in; it does not need to warn you about a mode you chose. */
+.le-note {
+  margin: 6px 0 0;
+  color: #7c8496;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.le-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #262c37;
+  color: #c3cbd9;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+.le-toast {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--le-panel-bg, #14171c);
+  color: #e7e9ee;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+}
+
+/* The launcher stays out of the way until someone wants it. */
+.le-launcher {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2147482000;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #14171c;
+  color: #fff;
+  font:
+    600 11px/36px ui-sans-serif,
+    system-ui,
+    sans-serif;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.le-launcher:hover {
+  opacity: 1;
+}
+
+/* Secondary members of a multi-selection: outlined, but without handles or a
+   badge — those belong to the primary, since resizing or setting an exact X
+   for several elements at once has no single meaning. */
+.le-mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  border-radius: 3px;
+  outline: 1.5px solid rgba(43, 105, 197, 0.55);
+  outline-offset: 1px;
+}
+
+/* The rest of the deltas. Same shape as the geometry ones: a custom property
+   the editor writes, a rule that only fires on an element it has touched. */
+[data-le-edited][style*="--edit-align"] {
+  text-align: var(--edit-align) !important;
+}
+[data-le-edited][style*="--edit-fs"] {
+  font-size: var(--edit-fs) !important;
+}
+[data-le-edited][style*="--edit-fw"] {
+  font-weight: var(--edit-fw) !important;
+}
+[data-le-edited][style*="--edit-pad"] {
+  padding: var(--edit-pad) !important;
+}
+[data-le-edited][style*="--edit-gap"] {
+  gap: var(--edit-gap) !important;
+}
+
+/* Close sits where people look for it — the header, top right — rather than
+   at the bottom of a panel you have to scroll to reach. */
+.le-headbtns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.le-panel .le-close {
+  min-width: 34px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+}
+.le-panel .le-close:hover {
+  background: #7f1d1d;
+  border-color: #7f1d1d;
+  color: #fff;
+}
