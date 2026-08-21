@@ -21,6 +21,7 @@ export type Operation =
   | "hide"
   | "remove"
   | "text"
+  | "comment"
 
 export interface EditRecord {
   /** Stable id — see `elementId()`. Never text- or nth-child-derived. */
@@ -48,6 +49,15 @@ export interface EditRecord {
   gap?: number
   /** Rewritten copy. Only ever set on a leaf — see `applyRecord`. */
   text?: string
+  /**
+   * What the reviewer said about this element, in their words.
+   *
+   * Kept apart from `notes`, which the editor writes itself. Whoever
+   * implements the export needs to know which sentences are a human's intent
+   * and which are the tool describing what it observed — they carry very
+   * different authority.
+   */
+  comment?: string
   /** Hidden but still occupying its space. */
   hidden?: boolean
   /** Taken out of the flow entirely, so the layout closes up around it. */
@@ -292,6 +302,19 @@ export function round(n: number, dp = 0): number {
   return Math.round(n * f) / f
 }
 
+/**
+ * Snap to the spacing step.
+ *
+ * A hand dragging a mouse lands on 13px, and 13px is not a decision — it is
+ * the pointer's noise wearing the costume of one. Snapping while the value is
+ * recorded, rather than tidying it up at export time, keeps the preview honest:
+ * what the reviewer sees on the page is the number the export will carry.
+ */
+export function snap(n: number, step: number): number {
+  if (!Number.isFinite(step) || step <= 1) return round(n)
+  return Math.round(n / step) * step
+}
+
 /* ── Applying a draft to the DOM ─────────────────────────────────────────── */
 
 const VAR_MAP: Array<[keyof EditRecord, string, string]> = [
@@ -308,6 +331,7 @@ const VAR_MAP: Array<[keyof EditRecord, string, string]> = [
 export function applyRecord(el: HTMLElement, rec: EditRecord | undefined) {
   if (!rec) {
     el.removeAttribute("data-le-edited")
+    el.removeAttribute("data-le-commented")
     for (const [, name] of VAR_MAP) el.style.removeProperty(name)
     for (const name of [
       "--edit-z",
@@ -332,6 +356,11 @@ export function applyRecord(el: HTMLElement, rec: EditRecord | undefined) {
   }
   const baked = readBakedCached(el)
   el.setAttribute("data-le-edited", "")
+  // Marked on the page, not just in the panel: a reviewer who wrote six
+  // comments needs to see which six elements carry them without clicking
+  // through the whole screen again.
+  if (rec.comment) el.setAttribute("data-le-commented", "")
+  else el.removeAttribute("data-le-commented")
   el.style.setProperty("--baked-x", `${baked.x}px`)
   el.style.setProperty("--baked-y", `${baked.y}px`)
   el.style.setProperty("--baked-rot", `${baked.rotation}deg`)

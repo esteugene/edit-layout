@@ -143,6 +143,20 @@ colour, these apply to the whole selection.
 element children would silently delete them, and a tool that eats a button is
 worse than one that admits it can't edit that node.
 
+**Comments.** Every element takes a note in your own words — why this is wrong,
+or what it should do instead. A comment alone is a valid edit: you can flag
+something without moving it, and commented elements are outlined on the page so
+you can see where you have been. It is kept apart from the notes the editor
+writes itself, because whoever implements this needs to know which sentences
+are a human's intent and which are the tool describing what it saw.
+
+**Snap.** Off, 4px or 8px, and 8px by default. A hand dragging a mouse lands on
+13px, and 13px is not a decision — it is the pointer's noise wearing the
+costume of one. The step is applied as the value is recorded rather than
+tidied up at export, so the page you are looking at is the proposal. Arrows
+nudge one step, Shift+arrows ten. Numbers you type are left exactly as typed:
+typing 13 *is* a decision.
+
 **Zoom.** Cmd +, Cmd −, Cmd 0. Zooms the edited region, not the panel.
 
 **Panel.** Docked by default: the body gives up that width, so the column sits
@@ -156,7 +170,13 @@ never silently rewrites another; `Apply to all breakpoints` does it on purpose.
 
 ## Getting the work out
 
-**Copy / Download JSON** — one row per change: breakpoint, element id, React
+**Copy agent brief** — the usual way out, and the one to reach for when a
+coding agent is going to implement this. A markdown document: what you said, in
+your words, first; then the measurements per breakpoint; then the rules for
+turning them into code. It is self-contained — paste it into the chat and the
+agent needs nothing else, not even this repository.
+
+**Copy / Download JSON** — the complete record, for a machine. One row per change: breakpoint, element id, React
 component name where the dev build exposed it, original container, intended
 destination, geometry, colours, copy, and whether it is `css-safe` or
 `structural-change`.
@@ -170,7 +190,8 @@ destination, geometry, colours, copy, and whether it is `css-safe` or
   "x": 0,
   "y": -12,
   "operation": "move",
-  "classification": "css-safe"
+  "classification": "css-safe",
+  "comment": "This is the headline. It reads like a caption."
 }
 ```
 
@@ -181,8 +202,9 @@ CODE`, because that is what it is.
 
 ## Implementing an approved export
 
-1. Round the accidental fractions. Pointer maths produces 0.7333px; nobody
-   meant that.
+1. Read the comments first. Where a comment and a measurement disagree, the
+   comment is the intent and the measurement is one attempt at it — a reviewer
+   who wrote "this should breathe" and dragged it 8px meant the first thing.
 2. Look for the pattern before the instance. One card nudged usually means the
    grid's gap is wrong, not that one card needs a transform.
 3. CSS-safe rows become spacing, Grid/Flex placement, props or tokens on the

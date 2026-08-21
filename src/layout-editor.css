@@ -22,6 +22,13 @@
     )
     rotate(calc(var(--baked-rot, 0deg) + var(--edit-rot, 0deg))) !important;
 }
+/* Outline rather than a badge: it costs no layout, survives on replaced
+   elements, and cannot collide with an ::after the page already uses. */
+[data-le-commented] {
+  outline: 2px dashed var(--le-accent, #2b69c5) !important;
+  outline-offset: 2px !important;
+}
+
 [data-le-edited][style*="--edit-w"] {
   width: var(--edit-w) !important;
 }
@@ -249,6 +256,18 @@ html[data-le-docked] .le-capture {
 .le-panel button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+/* The way work normally leaves the editor, so it should not look like the
+   fourth button in a row of four. */
+.le-panel button[data-primary] {
+  flex: 1;
+  background: var(--le-accent, #2b69c5);
+  border-color: var(--le-accent, #2b69c5);
+  color: #fff;
+  font-weight: 600;
+}
+.le-panel button[data-primary]:hover {
+  filter: brightness(1.1);
 }
 
 .le-field {

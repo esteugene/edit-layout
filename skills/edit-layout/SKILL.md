@@ -163,7 +163,15 @@ appears in the dropdown. Say the real port if autoPort moved it. Then add:
 - **the page stops responding to clicks while the editor is on** — that is
   deliberate, a click has to mean "select" not "submit"; close it to advance.
 
-Ask for **Copy JSON** (or **Export design snapshot** for a designer) when done.
+Tell them how to hand the work back, because it is the step people skip:
+select an element, write what is wrong in the **Comment for the implementer**
+box, and when the pass is done press **Copy agent brief** and paste it into the
+chat. Comments are the point — the measurements say what they did, the comment
+says what they meant. **Copy JSON** is the complete record for a machine, and
+**Export design snapshot** is the picture for a designer.
+
+Mention that dragging snaps to 8px by default, and that a typed number is kept
+exactly as typed — so an exact value should be typed, not dragged for.
 
 ---
 
@@ -204,8 +212,21 @@ change was reverted with it. Nothing from this should reach a merged branch.
 
 ## IMPLEMENT
 
-Read the export's own guidance in the cloned `README.md` ("Implementing an
-approved export"), and follow it: round the accidental fractions, look for the
-pattern before the instance, map `css-safe` rows onto spacing / grid / props /
-tokens, reorder through JSX or `order` rather than absolute positioning, and
-treat `structural-change` rows as a refactor to be specced rather than forced.
+An agent brief already carries its own instructions — follow those. For a raw
+JSON export, the rules are the same:
+
+- **Read the comments before the numbers.** Where the two disagree, the comment
+  is the intent and the measurement is one attempt at it. Somebody who wrote
+  "this should breathe" and dragged it 8px meant the sentence.
+- Look for the pattern before the instance: one card nudged usually means the
+  grid's gap is wrong, not that one card needs a transform.
+- `css-safe` rows become spacing, Grid/Flex placement, props or tokens on the
+  existing component — never absolute positioning that imitates the screenshot.
+- Reordering goes through JSX or data order, Grid areas, or Flex `order`.
+- `structural-change` rows are a refactor. If one cannot be mapped back safely,
+  ship the snapshot and a written spec instead of forcing it.
+- A record whose operation is `comment` moved nothing. It is a question or an
+  objection about that element, and it still needs an answer — do not skip it
+  because there is no geometry attached.
+- Bump `STORAGE_VERSION` in `core.ts` once implemented, so an old local draft
+  cannot stack its deltas on the new baseline.

@@ -35,6 +35,7 @@ import {
   originalText,
   readBaked,
   round,
+  snap,
   stampStableIds,
   storageKey,
   type Breakpoint,
@@ -46,6 +47,7 @@ import {
   type StableIdMap,
 } from "./core"
 import { buildSnapshot, captureBreakpoint, type Capture } from "./snapshot"
+import { buildBrief } from "./brief"
 import "./layout-editor.css"
 
 interface Props {
@@ -128,6 +130,13 @@ export default function LayoutEditor({
   const [toast, setToast] = useState<string | null>(null)
   const [showHits, setShowHits] = useState(false)
   const [captures, setCaptures] = useState<Capture[]>([])
+  // The spacing step every recorded number lands on. Not part of the draft —
+  // it governs how edits are taken down, not what was decided, so it belongs
+  // to the session rather than to the saved work.
+  const [snapStep, setSnapStep] = useState(8)
+
+  const snapRef = useRef(snapStep)
+  snapRef.current = snapStep
 
   const frameRef = useRef<HTMLDivElement>(null)
   const registry = useRef(new Map<string, HTMLElement>())
@@ -598,9 +607,10 @@ export default function LayoutEditor({
           gx = loX > hiX ? 0 : Math.min(Math.max(gx, loX), hiX)
           gy = loY > hiY ? 0 : Math.min(Math.max(gy, loY), hiY)
         }
+        const st = snapRef.current
         for (const t of d.targets) {
-          const nx = round(t.baseX + gx)
-          const ny = round(t.baseY + gy)
+          const nx = snap(t.baseX + gx, st)
+          const ny = snap(t.baseY + gy, st)
           t.el.style.setProperty("--edit-x", `${nx}px`)
           t.el.style.setProperty("--edit-y", `${ny}px`)
           if (t.id === d.id) {
@@ -622,8 +632,9 @@ export default function LayoutEditor({
         if (Math.abs(dx) > Math.abs(dy)) h = round(w / ratio)
         else w = round(h * ratio)
       }
-      w = Math.max(8, round(w))
-      h = Math.max(8, round(h))
+      const st = snapRef.current
+      w = Math.max(st, snap(w, st))
+      h = Math.max(st, snap(h, st))
       d.live = { ...d.live, w, h, operation: "resize" }
       d.el.style.setProperty("--edit-w", `${w}px`)
       d.el.style.setProperty("--edit-h", `${h}px`)
@@ -772,7 +783,10 @@ export default function LayoutEditor({
       }
       if (ids.length === 0 || !e.key.startsWith("Arrow")) return
       e.preventDefault()
-      const step = e.shiftKey ? 10 : 1
+      // One press moves by exactly one step, so a nudge is never swallowed by
+      // the snap it would land back on.
+      const st = snapRef.current
+      const step = e.shiftKey ? st * 10 : st
       const dx =
         e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0
       const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0
@@ -780,8 +794,8 @@ export default function LayoutEditor({
       for (const id of ids) {
         const cur = drafts[bp][id]
         changes.set(id, {
-          x: round((cur?.x ?? 0) + dx),
-          y: round((cur?.y ?? 0) + dy),
+          x: snap((cur?.x ?? 0) + dx, st),
+          y: snap((cur?.y ?? 0) + dy, st),
           operation: "move",
         })
       }
@@ -812,8 +826,12 @@ export default function LayoutEditor({
     const rows = (Object.keys(drafts) as Breakpoint[]).flatMap((b) =>
       Object.values(drafts[b]).map((r) => ({ breakpoint: b, ...r }))
     )
-    return JSON.stringify({ page, version: 1, changes: rows }, null, 2)
-  }, [drafts, page])
+    return JSON.stringify(
+      { page, version: 1, snap: snapStep, changes: rows },
+      null,
+      2
+    )
+  }, [drafts, page, snapStep])
 
   const download = useCallback((name: string, body: string, type: string) => {
     const url = URL.createObjectURL(new Blob([body], { type }))
@@ -983,6 +1001,32 @@ export default function LayoutEditor({
           delete next[selected]
           commit({ ...drafts, [bp]: next })
         }}
+        snapStep={snapStep}
+        setSnapStep={setSnapStep}
+        comment={record?.comment ?? ""}
+        onComment={(v) => {
+          if (!selected) return
+          const body = v.trim()
+          const cur = drafts[bp][selected]
+          // Clearing the only reason a record existed should take the record
+          // with it, rather than leaving an empty row in the export.
+          if (!body && cur && cur.operation === "comment") {
+            const next = { ...drafts[bp] }
+            delete next[selected]
+            commit({ ...drafts, [bp]: next })
+            return
+          }
+          patch(selected, {
+            comment: body || undefined,
+            operation: cur?.operation ?? "comment",
+          })
+        }}
+        onBrief={async () => {
+          await navigator.clipboard.writeText(
+            buildBrief(page, drafts, snapStep)
+          )
+          say("Brief copied — paste it to your agent")
+        }}
         onResetView={() => commit({ ...drafts, [bp]: {} as Draft })}
         onResetAll={() => commit(EMPTY_DRAFTS)}
         onCopy={async () => {
@@ -1117,6 +1161,11 @@ function Panel(props: {
   onResetSelected: () => void
   onResetView: () => void
   onResetAll: () => void
+  snapStep: number
+  setSnapStep: (n: number) => void
+  comment: string
+  onComment: (v: string) => void
+  onBrief: () => void
   onCopy: () => void
   onDownload: () => void
   onImport: () => void
@@ -1277,8 +1326,8 @@ function Panel(props: {
               </button>
             </div>
             <p className="le-note">
-              Arrows nudge 1px, Shift+arrows 10px. Shift while resizing locks
-              the ratio.
+              Arrows nudge {props.snapStep}px, Shift+arrows {props.snapStep * 10}
+              px. Shift while resizing locks the ratio.
             </p>
           </div>
 
@@ -1330,6 +1379,20 @@ function Panel(props: {
           </div>
 
           <div className="le-section">
+            <label>Comment for the implementer</label>
+            <textarea
+              className="le-comment"
+              rows={3}
+              value={props.comment}
+              placeholder="Why this is wrong, or what it should do instead…"
+              onChange={(e) => props.onComment(e.target.value)}
+            />
+            <p className="le-note">
+              Says what you meant. The numbers only say what you did.
+            </p>
+          </div>
+
+          <div className="le-section">
             <label>Appearance</label>
             {(
               [
@@ -1366,6 +1429,26 @@ function Panel(props: {
           </div>
         </>
       )}
+
+      <div className="le-section">
+        <label>Snap</label>
+        <div className="le-row">
+          {[1, 4, 8].map((s) => (
+            <button
+              type="button"
+              key={s}
+              data-active={props.snapStep === s}
+              onClick={() => props.setSnapStep(s)}
+            >
+              {s === 1 ? "Off" : `${s}px`}
+            </button>
+          ))}
+        </div>
+        <p className="le-note">
+          Dragging lands on this step, so an export carries decisions rather
+          than pointer noise. Typed numbers are left exactly as typed.
+        </p>
+      </div>
 
       <div className="le-section">
         <label>Zoom</label>
@@ -1425,6 +1508,19 @@ function Panel(props: {
             Reset all
           </button>
         </div>
+      </div>
+
+      <div className="le-section">
+        <label>Hand back</label>
+        <div className="le-row">
+          <button type="button" data-primary="" onClick={props.onBrief}>
+            Copy agent brief
+          </button>
+        </div>
+        <p className="le-note">
+          Markdown for a coding agent: your comments, the measurements, and how
+          to turn them into code. Paste it into the chat.
+        </p>
       </div>
 
       <div className="le-section">

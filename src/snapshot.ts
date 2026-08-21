@@ -94,7 +94,13 @@ function recordLine(r: EditRecord): string {
     <td>${escapeHtml(r.component ?? "—")}</td>
     <td>${escapeHtml(r.from ?? "—")}</td>
     <td>${escapeHtml(bits.join(", ") || r.operation)}</td>
-    <td>${escapeHtml((r.notes ?? []).join(" "))}</td>
+    <td>${
+      r.comment
+        ? `<strong>${escapeHtml(r.comment)}</strong>`
+        : ""
+    }${r.comment && r.notes?.length ? "<br>" : ""}${escapeHtml(
+      (r.notes ?? []).join(" ")
+    )}</td>
   </tr>`
 }
 
