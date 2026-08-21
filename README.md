@@ -20,6 +20,41 @@ turning it into CSS, props, tokens, or a refactor — is a human's.
 
 ## Install
 
+### With Claude Code (recommended)
+
+Two lines, once per machine. This repo is its own plugin marketplace:
+
+```
+/plugin marketplace add esteugene/edit-layout
+/plugin install edit-layout@esteugene
+```
+
+Then open the page you want to recompose and say **`/edit-layout`** — or just
+"attach the layout editor to /pricing". It finds the route, picks the
+landmarks, wires the mount behind a dev-only gate, starts the dev server,
+checks the gate actually closes, and hands you back a URL. `/edit-layout
+detach` takes it all off again.
+
+Without the plugin system, the skill alone — one line, needs `gh` logged in:
+
+```
+gh repo clone esteugene/edit-layout /tmp/edit-layout && bash /tmp/edit-layout/install.sh
+```
+
+It writes a single file, `~/.claude/skills/edit-layout/SKILL.md`, and
+`--uninstall` removes it again.
+
+While this repo is private, both routes go through your GitHub credentials —
+`/plugin marketplace add` and `gh repo clone` each work for anyone with read
+access, and neither needs anything else set up. If it is ever made public, the
+same installer also works unauthenticated:
+
+```
+curl -fsSL https://raw.githubusercontent.com/esteugene/edit-layout/main/install.sh | bash
+```
+
+### By hand
+
 No package, no dependencies beyond React. Copy this folder into your app:
 
 ```
@@ -27,7 +62,8 @@ cp -r src your-app/components/edit-layout
 ```
 
 The only host-specific wiring is a boolean you pass in. Nothing here imports
-from your app.
+from your app. The rest of this README is what to do next; the skill above just
+automates it.
 
 ## Mount it on a page
 

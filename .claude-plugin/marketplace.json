@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "esteugene",
+  "description": "Eugene Chorny's Claude Code extensions",
+  "owner": {
+    "name": "Eugene Chorny"
+  },
+  "plugins": [
+    {
+      "name": "edit-layout",
+      "description": "Mount a composition editor on a page of the React app you are working in, recompose it by hand in the browser, and export the result as JSON or a design snapshot. Use when someone wants to move things around on a real page rather than in code, to take the editor back off, or to turn a finished export into an implementation plan.",
+      "author": {
+        "name": "Eugene Chorny"
+      },
+      "source": "./",
+      "category": "design",
+      "homepage": "https://github.com/esteugene/edit-layout",
+      "license": "MIT"
+    }
+  ]
+}
