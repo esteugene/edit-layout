@@ -81,7 +81,7 @@ generated id.
 How to find them, in order of preference:
 
 1. **Existing semantic class names** in the page's own components/CSS
-   (`.result-amount`, `.quiz-option`). Grep the component files.
+   (`.hero-title`, `.feature-card`). Grep the component files.
 2. If the page is **Tailwind-only** and has no semantic classes, use structural
    or attribute selectors (`section:nth-of-type(2) h2`, `[data-testid=…]`), or
    ship a smaller map — a short honest map beats a long guessed one.
@@ -90,7 +90,7 @@ How to find them, in order of preference:
 invisible at runtime: the element just gets a generated id and nobody notices.
 
 ```bash
-for c in result-amount quiz-option btn-primary; do
+for c in hero-title feature-card btn-primary; do
   printf '%-24s %s\n' "$c" "$(grep -rln -- "$c" --include='*.tsx' --include='*.css' app components | head -2 | tr '\n' ' ')"
 done
 ```
