@@ -1,11 +1,17 @@
 {
   "name": "edit-layout",
   "description": "Mount a composition editor on a page of the React app you are working in, recompose it by hand in the browser, and export the result as JSON or a design snapshot. Use when someone wants to move things around on a real page rather than in code, to take the editor back off, or to turn a finished export into an implementation plan.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Eugene Chorny"
   },
   "homepage": "https://github.com/esteugene/edit-layout",
   "license": "MIT",
-  "keywords": ["design", "layout", "design-review", "devtool", "react"]
+  "keywords": [
+    "design",
+    "layout",
+    "design-review",
+    "devtool",
+    "react"
+  ]
 }
